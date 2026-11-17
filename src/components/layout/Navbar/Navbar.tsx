@@ -1,0 +1,142 @@
+"use client";
+import { Button } from "@/components/ui/button";
+import { counterContext } from "@/contexts/counterContext";
+import { RootState } from "@/redux/store";
+import { cn } from "cn";
+import { ShoppingCart, Zap } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useContext } from "react";
+import { useSelector } from "react-redux";
+
+const navLinks = [
+  {
+    title: "Products",
+    href: "/products",
+  },
+  {
+    title: "Categories",
+    href: "/categories",
+  },
+  {
+    title: "Brands",
+    href: "/brands",
+  },
+  { title: "Wishlist", href: "/wishlist" },
+  { title: "Reviews", href: "/reviews" },
+  {
+    title: "Cart",
+    href: "/cart",
+  },
+  {
+    title: "Orders",
+    href: "/allorders",
+  },
+  {
+    title: "Addresses",
+    href: "/addresses",
+  },
+];
+
+export default function Navbar() {
+  const pathName = usePathname();
+  const { numOfCartItems } = useContext(counterContext);
+
+  const session = useSession();
+
+  const { count } = useSelector((state: RootState) => state.counter);
+
+
+  return (
+    <div className="sticky top-0 z-1000 bg-white">
+      <div className="bg-[#1d2c26] px-4 py-2.5 text-center text-xs tracking-wide text-white">
+        Good tech. Great possibilities.{" "}
+        <span className="ml-2 text-[#ceec9b]">
+          Find your next everyday upgrade.
+        </span>
+      </div>
+      <div className="container mx-auto">
+        <header className="mx-auto w-full flex flex-wrap items-center justify-between gap-5 px-5 py-6 sm:px-8 lg:px-12">
+          <Link
+            href="/"
+            aria-label="TechMart home"
+            className="flex items-center gap-2 text-xl font-extrabold tracking-[-0.08em]"
+          >
+            <span className="flex size-8 items-center justify-center rounded-lg bg-[#1d2c26] text-[#d1f391]">
+              <Zap size={19} fill="currentColor" />
+            </span>
+            techmart<span className="text-[#63893d]">.</span> {count}
+          </Link>
+          {session.status != "loading" && (
+            <nav
+              aria-label="Main navigation"
+              className="order-3 flex w-full flex-wrap justify-center gap-x-7 gap-y-2 border-t border-[#e5e7df] pt-4 text-sm font-medium sm:order-none sm:w-auto sm:border-0 sm:pt-0"
+            >
+              {navLinks
+                .filter((el) => {
+                  return !(
+                    session.status == "unauthenticated" &&
+                    ["/allorders", "/cart", "/addresses", "/wishlist"].includes(el.href)
+                  );
+                })
+                .map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "transition-colors hover:text-[#64843f]",
+                      pathName.includes(link.href)
+                        ? "text-[#64843f] font-bold"
+                        : "",
+                    )}
+                  >
+                    {link.title}
+                  </Link>
+                ))}
+            </nav>
+          )}
+          <div className="flex gap-3 items-center">
+            {session.status === "authenticated" && <Link href="/account" className="hidden text-xs font-semibold hover:text-[#64843f] sm:block">Account</Link>}
+            {session.status === "authenticated" && session.data?.user.role?.toLowerCase() === "admin" && <Link href="/admin/orders" className="hidden text-xs font-semibold hover:text-[#64843f] sm:block">All orders</Link>}
+            {session.status === "authenticated" && session.data?.user.role?.toLowerCase() === "admin" && <Link href="/admin/users" className="hidden text-xs font-semibold hover:text-[#64843f] sm:block">Customers</Link>}
+            {session.status == "authenticated" && (
+              <Link href={"/cart"}>
+                <div className="relative">
+                  <span className="absolute bottom-1/2 bg-yellow-500 w-6 h-6 flex justify-center items-center rounded-full -inset-e-4">
+                    {numOfCartItems}
+                  </span>
+                  <ShoppingCart className="mr-2 h-5 w-5 " />
+                </div>
+              </Link>
+            )}
+            {session.status == "unauthenticated" && (
+              <>
+                <Link
+                  href="/auth/signin"
+                  className="flex items-center gap-2 rounded-full border border-[#d9dfd3] px-4 py-2.5 text-xs font-semibold transition-colors hover:bg-[#eaf1e0]"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="flex items-center gap-2 rounded-full border border-[#d9dfd3] px-4 py-2.5 text-xs font-semibold transition-colors hover:bg-[#eaf1e0]"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+            {session.status == "authenticated" && (
+              <Button
+                onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+                className="flex ms-10 items-center gap-2 rounded-full border border-[#d9dfd3] px-4 py-2.5 text-xs font-semibold transition-colors hover:bg-[#eaf1e0]"
+              >
+                Sign Out
+              </Button>
+            )}
+          </div>
+        </header>
+      </div>
+    </div>
+  );
+}
